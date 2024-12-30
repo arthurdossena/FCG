@@ -218,6 +218,11 @@ bool tecla_A_pressionada = false;
 bool tecla_W_pressionada = false;
 bool tecla_S_pressionada = false;
 
+bool right_turn = false;
+bool left_turn = false;
+
+float plane_rotation = 0.0f;
+
 // Variáveis que definem um programa de GPU (shaders). Veja função LoadShadersFromFiles().
 GLuint g_GpuProgramID = 0;
 GLint g_model_uniform;
@@ -305,9 +310,8 @@ int main(int argc, char* argv[])
 
     // Carregamos duas imagens para serem utilizadas como textura
     LoadTextureImage("../../data/tc-earth_daymap_surface.jpg");      // TextureImage0
-    LoadTextureImage("../../data/tc-earth_nightmap_citylights.gif"); // TextureImage1
-    LoadTextureImage("../../data/PlanesSurface_Color.jpg");          // TextureImage2
-    LoadTextureImage("../../data/forest_ground.jpg");                // TextureImage3
+    LoadTextureImage("../../data/PlanesSurface_Color.jpg");          // TextureImage1
+    LoadTextureImage("../../data/forest_ground.jpg");                // TextureImage2
 
     // Construímos a representação de objetos geométricos através de malhas de triângulos
     ObjModel spheremodel("../../data/sphere.obj");
@@ -395,7 +399,7 @@ int main(int argc, char* argv[])
         // Note que, no sistema de coordenadas da câmera, os planos near e far
         // estão no sentido negativo! Veja slides 176-204 do documento Aula_09_Projecoes.pdf.
         float nearplane = -0.1f;  // Posição do "near plane"
-        float farplane  = -10.0f; // Posição do "far plane"
+        float farplane  = -1000.0f; // Posição do "far plane"
 
         if (g_UsePerspectiveProjection)
         {
@@ -445,7 +449,8 @@ int main(int argc, char* argv[])
         DrawVirtualObject("the_bunny");
 
         // Desenhamos o plano do chão
-        model = Matrix_Translate(0.0f,-1.1f,0.0f);
+        model = Matrix_Translate(0.0f,-1.1f,0.0f)
+              * Matrix_Scale(1000.0f, 1.0f, 1000.0f);
         glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
         glUniform1i(g_object_id_uniform, PLANE);
         DrawVirtualObject("the_plane");
@@ -453,6 +458,7 @@ int main(int argc, char* argv[])
         model = Matrix_Translate(g_TorsoPositionX, g_TorsoPositionY, g_TorsoPositionZ)
               * Matrix_Rotate_Y(g_CameraTheta + M_PI)
               * Matrix_Rotate_X(g_CameraPhi)
+              * Matrix_Rotate_Z(plane_rotation)
               * Matrix_Scale(0.001f, 0.001f, 0.001f);
         glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
         glUniform1i(g_object_id_uniform, AIRPLANE);
@@ -489,19 +495,49 @@ int main(int argc, char* argv[])
         // pela biblioteca GLFW.
         glfwPollEvents();
 
+
+        // Movimenta câmera para frente sempre
+        torso_position += camera_view_vector/norm(camera_view_vector) * speed * delta_t;
+        if (tecla_W_pressionada)
+            torso_position += camera_view_vector/norm(camera_view_vector) * speed * delta_t;
+        //if (tecla_S_pressionada)
+            // Movimenta câmera para trás
+            //torso_position -= camera_view_vector/norm(camera_view_vector) * speed * delta_t;
         if (tecla_D_pressionada)
             // Movimenta câmera para direita
             torso_position += crossproduct(camera_up_vector,-camera_view_vector)/norm(crossproduct(camera_up_vector,-camera_view_vector)) * speed * delta_t;
         if (tecla_A_pressionada)
             // Movimenta câmera para esquerda
             torso_position += crossproduct(camera_up_vector,camera_view_vector)/norm(crossproduct(camera_up_vector,camera_view_vector)) * speed * delta_t;
-        if (tecla_W_pressionada)
-            // Movimenta câmera para frente
-            torso_position += camera_view_vector/norm(camera_view_vector) * speed * delta_t;
-        if (tecla_S_pressionada)
-            // Movimenta câmera para trás
-            torso_position -= camera_view_vector/norm(camera_view_vector) * speed * delta_t;
         
+        if(right_turn){
+            if(plane_rotation<0.7f){
+                plane_rotation += 0.15f;
+            }
+            else{
+                plane_rotation = 0.7f;
+            }
+        }
+        else if(left_turn){
+            if(plane_rotation>-0.7f){
+                plane_rotation -= 0.15f;
+            }
+            else{
+                plane_rotation = -0.7f;
+            }
+        }
+        else{
+            if(plane_rotation>=-0.15f && plane_rotation<=0.15f){
+                plane_rotation = 0.0f;
+            }
+            else if(plane_rotation>0.15f){
+                plane_rotation -= 0.25f;
+            }
+            else if(plane_rotation<-0.15f){
+                plane_rotation += 0.25f;
+            }
+        }
+
         g_TorsoPositionX = torso_position.x;
         g_TorsoPositionY = torso_position.y;
         g_TorsoPositionZ = torso_position.z;
@@ -541,8 +577,8 @@ void LoadTextureImage(const char* filename)
     glGenSamplers(1, &sampler_id);
 
     // Veja slides 95-96 do documento Aula_20_Mapeamento_de_Texturas.pdf
-    glSamplerParameteri(sampler_id, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glSamplerParameteri(sampler_id, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glSamplerParameteri(sampler_id, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glSamplerParameteri(sampler_id, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
     // Parâmetros de amostragem da textura.
     glSamplerParameteri(sampler_id, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
@@ -1272,13 +1308,17 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
     if (key == GLFW_KEY_D)
     {
         if (action == GLFW_PRESS)
-            // Usuário apertou a tecla D, então atualizamos o estado para pressionada
+        { // Usuário apertou a tecla D, então atualizamos o estado para pressionada
             tecla_D_pressionada = true;
+            right_turn = true;
+        }
 
         else if (action == GLFW_RELEASE)
+        {
             // Usuário largou a tecla D, então atualizamos o estado para NÃO pressionada
             tecla_D_pressionada = false;
-
+            right_turn = false;
+        }
         else if (action == GLFW_REPEAT)
             // Usuário está segurando a tecla D e o sistema operacional está
             // disparando eventos de repetição. Neste caso, não precisamos
@@ -1290,13 +1330,17 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
     if (key == GLFW_KEY_A)
     {
         if (action == GLFW_PRESS)
+        {
             // Usuário apertou a tecla A, então atualizamos o estado para pressionada
             tecla_A_pressionada = true;
-
+            left_turn = true;
+        }
         else if (action == GLFW_RELEASE)
+        {
             // Usuário largou a tecla A, então atualizamos o estado para NÃO pressionada
             tecla_A_pressionada = false;
-
+            left_turn = false;
+        }
         else if (action == GLFW_REPEAT)
             // Usuário está segurando a tecla D e o sistema operacional está
             // disparando eventos de repetição. Neste caso, não precisamos
