@@ -306,6 +306,8 @@ int main(int argc, char* argv[])
     // Carregamos duas imagens para serem utilizadas como textura
     LoadTextureImage("../../data/tc-earth_daymap_surface.jpg");      // TextureImage0
     LoadTextureImage("../../data/tc-earth_nightmap_citylights.gif"); // TextureImage1
+    LoadTextureImage("../../data/PlanesSurface_Color.jpg");          // TextureImage2
+    LoadTextureImage("../../data/forest_ground.jpg");                // TextureImage3
 
     // Construímos a representação de objetos geométricos através de malhas de triângulos
     ObjModel spheremodel("../../data/sphere.obj");
@@ -319,6 +321,10 @@ int main(int argc, char* argv[])
     ObjModel planemodel("../../data/plane.obj");
     ComputeNormals(&planemodel);
     BuildTrianglesAndAddToVirtualScene(&planemodel);
+
+    ObjModel airplanemodel("../../data/Plane1.obj");
+    ComputeNormals(&airplanemodel);
+    BuildTrianglesAndAddToVirtualScene(&airplanemodel);
 
     if ( argc > 1 )
     {
@@ -423,11 +429,10 @@ int main(int argc, char* argv[])
         #define SPHERE 0
         #define BUNNY  1
         #define PLANE  2
+        #define AIRPLANE 3
 
         // Desenhamos o modelo da esfera
-        model = Matrix_Translate(g_TorsoPositionX, g_TorsoPositionY, g_TorsoPositionZ)
-              * Matrix_Rotate_Y(g_CameraTheta)
-              * Matrix_Rotate_X(-g_CameraPhi);
+        model = Matrix_Translate(-1.0f,0.0f,0.0f);
         glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
         glUniform1i(g_object_id_uniform, SPHERE);
         DrawVirtualObject("the_sphere");
@@ -444,6 +449,15 @@ int main(int argc, char* argv[])
         glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
         glUniform1i(g_object_id_uniform, PLANE);
         DrawVirtualObject("the_plane");
+
+        model = Matrix_Translate(g_TorsoPositionX, g_TorsoPositionY, g_TorsoPositionZ)
+              * Matrix_Rotate_Y(g_CameraTheta + M_PI)
+              * Matrix_Rotate_X(g_CameraPhi)
+              * Matrix_Scale(0.001f, 0.001f, 0.001f);
+        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, AIRPLANE);
+        DrawVirtualObject("Plane1");
+        DrawVirtualObject("Motor");
 
         // Imprimimos na tela os ângulos de Euler que controlam a rotação do
         // terceiro cubo.

@@ -22,6 +22,7 @@ uniform mat4 projection;
 #define SPHERE 0
 #define BUNNY  1
 #define PLANE  2
+#define AIRPLANE 3
 uniform int object_id;
 
 // Parâmetros da axis-aligned bounding box (AABB) do modelo
@@ -32,6 +33,7 @@ uniform vec4 bbox_max;
 uniform sampler2D TextureImage0;
 uniform sampler2D TextureImage1;
 uniform sampler2D TextureImage2;
+uniform sampler2D TextureImage3;
 
 // O valor de saída ("out") de um Fragment Shader é a cor final do fragmento.
 out vec4 color;
@@ -68,6 +70,9 @@ void main()
     float U = 0.0;
     float V = 0.0;
 
+    vec3 Kd;
+    vec3 Ka;
+
     if ( object_id == SPHERE )
     {
         // PREENCHA AQUI as coordenadas de textura da esfera, computadas com
@@ -96,6 +101,9 @@ void main()
         V = (theta + M_PI_2) / M_PI;     // Normalizar para [0, 1]
 
         U = 1.0 - U;
+
+        Kd = texture(TextureImage0, vec2(U,V)).rgb;
+        Ka = vec3(0.1, 0.1, 0.1);
     }
     else if ( object_id == BUNNY )
     {
@@ -119,23 +127,39 @@ void main()
 
         U = (position_model.x - minx) / (maxx - minx);
         V = (position_model.y - miny) / (maxy - miny);
+
+        Kd = texture(TextureImage0, vec2(U,V)).rgb;
+        Ka = vec3(0.1, 0.1, 0.1);
     }
     else if ( object_id == PLANE )
     {
         // Coordenadas de textura do plano, obtidas do arquivo OBJ.
         U = texcoords.x;
         V = texcoords.y;
+
+        Kd = texture(TextureImage2, vec2(U,V)).rgb;
+        Ka = vec3(0.1, 0.1, 0.1);
+    }
+    else if ( object_id == AIRPLANE )
+    {
+        U = texcoords.x;
+        V = texcoords.y;
+
+        Kd = texture(TextureImage2, vec2(U,V)).rgb;
+        Ka = vec3(0.1, 0.1, 0.1);
     }
 
+
     // Obtemos a refletância difusa a partir da leitura da imagem TextureImage0
-    vec3 Kd0 = texture(TextureImage0, vec2(U,V)).rgb;
-    vec3 Kd1 = texture(TextureImage1, vec2(U, V)).rgb;
+    //vec3 Kd0 = texture(TextureImage0, vec2(U,V)).rgb;
+    //vec3 Kd1 = texture(TextureImage1, vec2(U,V)).rgb;
+    //vec3 Kd2 = texture(TextureImage2, vec2(U,V)).rgb;
 
     // Equação de Iluminação
-    float lambert0 = max(0.0,dot(n,l));
-    //float lambert1 = max(0.0,dot(n,-l));
+    float lambert = max(0.0,dot(n,l));
+    float antilambert = max(0.0,dot(n,-l)) * 0.1;
 
-    color.rgb = Kd0 * (lambert0 + 0.01);
+    color.rgb = Kd * (lambert + antilambert);
 
     // NOTE: Se você quiser fazer o rendering de objetos transparentes, é
     // necessário:
