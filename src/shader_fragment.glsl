@@ -23,6 +23,7 @@ uniform mat4 projection;
 #define BUNNY  1
 #define PLANE  2
 #define AIRPLANE 3
+#define TREE 4
 uniform int object_id;
 
 // Parâmetros da axis-aligned bounding box (AABB) do modelo
@@ -33,7 +34,9 @@ uniform vec4 bbox_max;
 uniform sampler2D TextureImage0;
 uniform sampler2D TextureImage1;
 uniform sampler2D TextureImage2;
-//uniform sampler2D TextureImage3;
+uniform sampler2D TextureImage3;
+uniform sampler2D TextureImage4;
+uniform sampler2D TextureImage5;
 
 // O valor de saída ("out") de um Fragment Shader é a cor final do fragmento.
 out vec4 color;
@@ -71,6 +74,9 @@ void main()
     float V = 0.0;
 
     vec3 Kd;
+    vec3 Kd0;
+    vec3 Kd1;
+    vec3 Kd2;
     vec3 Ka;
 
     if ( object_id == SPHERE )
@@ -146,6 +152,19 @@ void main()
         V = texcoords.y;
 
         Kd = texture(TextureImage1, vec2(U,V)).rgb;
+        Ka = vec3(0.1, 0.1, 0.1);
+    }
+    else if ( object_id == TREE )
+    {
+        U = texcoords.x;
+        V = texcoords.y;
+
+        //Kd0 = texture(TextureImage3, vec2(U,V)).rgb;
+        //Kd1 = texture(TextureImage4, vec2(U,V)).rgb;
+        //Kd2 = texture(TextureImage5, vec2(U,V)).rgb;
+
+        //Kd = Kd0 + Kd1 + Kd2;
+        Kd = texture(TextureImage3, vec2(U,V)).rgb;
         Ka = vec3(0.1, 0.1, 0.1);
     }
 

@@ -1,0 +1,10 @@
+newmtl SM_Pine_b_04_LOD0SG
+Ka 1.000 1.000 1.000     # Cor ambiente
+Kd 1.000 1.000 1.000     # Cor difusa
+Ks 0.500 0.500 0.500     # Cor especular
+Ns 32.000                # Dureza especular
+d 1.0                    # Transparência (1.0 = opaco)
+
+map_Kd T_Pine_02_D.TGA   # Difuse map
+map_Bump T_Pine_02_N.TGA  # Normal map
+map_d T_Pine_02_OP.tga  # Specular map

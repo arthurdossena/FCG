@@ -29,6 +29,9 @@
 #include <sstream>
 #include <stdexcept>
 #include <algorithm>
+#include <iostream>
+#include <utility>
+#include <random>
 
 // Headers das bibliotecas OpenGL
 #include <glad/glad.h>   // Criação de contexto OpenGL 3.3
@@ -204,7 +207,7 @@ float g_ForearmAngleX = 0.0f;
 
 // Variáveis que controlam translação do torso
 float g_TorsoPositionX = 0.0f;
-float g_TorsoPositionY = 0.0f;
+float g_TorsoPositionY = 5.0f;
 float g_TorsoPositionZ = 0.0f;
 
 // Variável que controla o tipo de projeção utilizada: perspectiva ou ortográfica.
@@ -222,6 +225,15 @@ bool right_turn = false;
 bool left_turn = false;
 
 float plane_rotation = 0.0f;
+
+std::vector<std::pair<float, float>> trees;
+int num_objects = 500;
+double radius = 10.0;
+
+std::random_device rd;
+std::mt19937 gen(rd()); // Gerador de números aleatórios
+std::uniform_real_distribution<> dis(-50.0, 50.0); // Geração de números entre -500 e 500
+
 
 // Variáveis que definem um programa de GPU (shaders). Veja função LoadShadersFromFiles().
 GLuint g_GpuProgramID = 0;
@@ -313,14 +325,18 @@ int main(int argc, char* argv[])
     LoadTextureImage("../../data/PlanesSurface_Color.jpg");          // TextureImage1
     LoadTextureImage("../../data/forest_ground.jpg");                // TextureImage2
 
-    // Construímos a representação de objetos geométricos através de malhas de triângulos
-    ObjModel spheremodel("../../data/sphere.obj");
-    ComputeNormals(&spheremodel);
-    BuildTrianglesAndAddToVirtualScene(&spheremodel);
+    LoadTextureImage("../../data/T_Pine_02_D.TGA");                  // TextureImage3
+    // LoadTextureImage("../../data/T_Pine_02_N.TGA");                  // TextureImage4
+    // LoadTextureImage("../../data/T_Pine_02_OP.tga");                 // TextureImage5
 
-    ObjModel bunnymodel("../../data/bunny.obj");
-    ComputeNormals(&bunnymodel);
-    BuildTrianglesAndAddToVirtualScene(&bunnymodel);
+    // Construímos a representação de objetos geométricos através de malhas de triângulos
+    // ObjModel spheremodel("../../data/sphere.obj");
+    // ComputeNormals(&spheremodel);
+    // BuildTrianglesAndAddToVirtualScene(&spheremodel);
+
+    // ObjModel bunnymodel("../../data/bunny.obj");
+    // ComputeNormals(&bunnymodel);
+    // BuildTrianglesAndAddToVirtualScene(&bunnymodel);
 
     ObjModel planemodel("../../data/plane.obj");
     ComputeNormals(&planemodel);
@@ -329,6 +345,10 @@ int main(int argc, char* argv[])
     ObjModel airplanemodel("../../data/Plane1.obj");
     ComputeNormals(&airplanemodel);
     BuildTrianglesAndAddToVirtualScene(&airplanemodel);
+
+    ObjModel treemodel("../../data/SM_Pine_b_04.obj");
+    ComputeNormals(&treemodel);
+    BuildTrianglesAndAddToVirtualScene(&treemodel);
 
     if ( argc > 1 )
     {
@@ -347,9 +367,20 @@ int main(int argc, char* argv[])
     glCullFace(GL_BACK);
     glFrontFace(GL_CCW);
 
-    float speed = 0.8f; // Velocidade da câmera
+    float speed = 2.0f; // Velocidade da câmera
     float prev_time = (float)glfwGetTime();
     float delta_t;
+
+    while (trees.size() < num_objects) {
+        // Gerar um ponto aleatório dentro do quadrado
+        float x = dis(gen);
+        float y = dis(gen);
+
+        // Verificar se o ponto está fora do círculo
+        if (x*x + y*y > radius*radius) {
+            trees.push_back({x, y});
+        }
+    }
 
     // Ficamos em um loop infinito, renderizando, até que o usuário feche a janela
     while (!glfwWindowShouldClose(window))
@@ -399,7 +430,7 @@ int main(int argc, char* argv[])
         // Note que, no sistema de coordenadas da câmera, os planos near e far
         // estão no sentido negativo! Veja slides 176-204 do documento Aula_09_Projecoes.pdf.
         float nearplane = -0.1f;  // Posição do "near plane"
-        float farplane  = -1000.0f; // Posição do "far plane"
+        float farplane  = -150.0f; // Posição do "far plane"
 
         if (g_UsePerspectiveProjection)
         {
@@ -434,19 +465,20 @@ int main(int argc, char* argv[])
         #define BUNNY  1
         #define PLANE  2
         #define AIRPLANE 3
+        #define TREE 4
 
-        // Desenhamos o modelo da esfera
-        model = Matrix_Translate(-1.0f,0.0f,0.0f);
-        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, SPHERE);
-        DrawVirtualObject("the_sphere");
+        // // Desenhamos o modelo da esfera
+        // model = Matrix_Translate(-10.0f,0.0f,0.0f);
+        // glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        // glUniform1i(g_object_id_uniform, SPHERE);
+        // DrawVirtualObject("the_sphere");
 
-        // Desenhamos o modelo do coelho
-        model = Matrix_Translate(1.0f,0.0f,0.0f)
-              * Matrix_Rotate_X(g_AngleX + (float)glfwGetTime() * 0.1f);
-        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, BUNNY);
-        DrawVirtualObject("the_bunny");
+        // // Desenhamos o modelo do coelho
+        // model = Matrix_Translate(10.0f,0.0f,0.0f)
+        //       * Matrix_Rotate_X(g_AngleX + (float)glfwGetTime() * 0.1f);
+        // glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        // glUniform1i(g_object_id_uniform, BUNNY);
+        // DrawVirtualObject("the_bunny");
 
         // Desenhamos o plano do chão
         model = Matrix_Translate(0.0f,-1.1f,0.0f)
@@ -464,6 +496,15 @@ int main(int argc, char* argv[])
         glUniform1i(g_object_id_uniform, AIRPLANE);
         DrawVirtualObject("Plane1");
         DrawVirtualObject("Motor");
+
+        for(int i=0; i<num_objects; i++){
+            model = Matrix_Translate(trees[i].first,-1.1f,trees[i].second)
+                * Matrix_Scale(0.001f,0.001f,0.001f);
+            glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+            glUniform1i(g_object_id_uniform, TREE);
+            DrawVirtualObject("SM_Pine_b_04");
+            //DrawVirtualObject("SM_Pine_b_04_LOD2");
+        }
 
         // Imprimimos na tela os ângulos de Euler que controlam a rotação do
         // terceiro cubo.
@@ -500,9 +541,9 @@ int main(int argc, char* argv[])
         torso_position += camera_view_vector/norm(camera_view_vector) * speed * delta_t;
         if (tecla_W_pressionada)
             torso_position += camera_view_vector/norm(camera_view_vector) * speed * delta_t;
-        //if (tecla_S_pressionada)
-            // Movimenta câmera para trás
-            //torso_position -= camera_view_vector/norm(camera_view_vector) * speed * delta_t;
+        // if (tecla_S_pressionada)
+        //     // Movimenta câmera para trás
+        //     torso_position -= camera_view_vector/norm(camera_view_vector) * speed * delta_t;
         if (tecla_D_pressionada)
             // Movimenta câmera para direita
             torso_position += crossproduct(camera_up_vector,-camera_view_vector)/norm(crossproduct(camera_up_vector,-camera_view_vector)) * speed * delta_t;
@@ -683,6 +724,9 @@ void LoadShadersFromFiles()
     glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage0"), 0);
     glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage1"), 1);
     glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage2"), 2);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage3"), 3);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage4"), 4);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage5"), 5);
     glUseProgram(0);
 }
 
@@ -1151,63 +1195,61 @@ void CursorPosCallback(GLFWwindow* window, double xpos, double ypos)
     // parâmetros que definem a posição da câmera dentro da cena virtual.
     // Assim, temos que o usuário consegue controlar a câmera.
 
-    if (g_LeftMouseButtonPressed)
-    {
-        // Deslocamento do cursor do mouse em x e y de coordenadas de tela!
-        float dx = xpos - g_LastCursorPosX;
-        float dy = ypos - g_LastCursorPosY;
-    
-        // Atualizamos parâmetros da câmera com os deslocamentos
-        g_CameraTheta -= 0.01f*dx;
-        g_CameraPhi   += 0.01f*dy;
-    
-        // Em coordenadas esféricas, o ângulo phi deve ficar entre -pi/2 e +pi/2.
-        float phimax = 3.141592f/2;
-        float phimin = -phimax;
-    
-        if (g_CameraPhi > phimax)
-            g_CameraPhi = phimax;
-    
-        if (g_CameraPhi < phimin)
-            g_CameraPhi = phimin;
-    
-        // Atualizamos as variáveis globais para armazenar a posição atual do
-        // cursor como sendo a última posição conhecida do cursor.
-        g_LastCursorPosX = xpos;
-        g_LastCursorPosY = ypos;
-    }
+    // Deslocamento do cursor do mouse em x e y de coordenadas de tela!
+    float dx = xpos - g_LastCursorPosX;
+    float dy = ypos - g_LastCursorPosY;
 
-    if (g_RightMouseButtonPressed)
-    {
-        // Deslocamento do cursor do mouse em x e y de coordenadas de tela!
-        float dx = xpos - g_LastCursorPosX;
-        float dy = ypos - g_LastCursorPosY;
-    
-        // Atualizamos parâmetros da antebraço com os deslocamentos
-        g_ForearmAngleZ -= 0.01f*dx;
-        g_ForearmAngleX += 0.01f*dy;
-    
-        // Atualizamos as variáveis globais para armazenar a posição atual do
-        // cursor como sendo a última posição conhecida do cursor.
-        g_LastCursorPosX = xpos;
-        g_LastCursorPosY = ypos;
-    }
+    // Atualizamos parâmetros da câmera com os deslocamentos
+    g_CameraTheta -= 0.01f*dx;
+    g_CameraPhi   += 0.01f*dy;
 
-    if (g_MiddleMouseButtonPressed)
-    {
-        // // Deslocamento do cursor do mouse em x e y de coordenadas de tela!
-        // float dx = xpos - g_LastCursorPosX;
-        // float dy = ypos - g_LastCursorPosY;
+    // Em coordenadas esféricas, o ângulo phi deve ficar entre -pi/2 e +pi/2.
+    float phimax = 3.141592f/2;
+    float phimin = -phimax;
+
+    if (g_CameraPhi > phimax)
+        g_CameraPhi = phimax;
+
+    if (g_CameraPhi < phimin)
+        g_CameraPhi = phimin;
+
+    // Atualizamos as variáveis globais para armazenar a posição atual do
+    // cursor como sendo a última posição conhecida do cursor.
+    g_LastCursorPosX = xpos;
+    g_LastCursorPosY = ypos;
+
+
+    // if (g_RightMouseButtonPressed)
+    // {
+    //     // Deslocamento do cursor do mouse em x e y de coordenadas de tela!
+    //     float dx = xpos - g_LastCursorPosX;
+    //     float dy = ypos - g_LastCursorPosY;
     
-        // // Atualizamos parâmetros da antebraço com os deslocamentos
-        // g_TorsoPositionX += 0.01f*dx;
-        // g_TorsoPositionY -= 0.01f*dy;
+    //     // Atualizamos parâmetros da antebraço com os deslocamentos
+    //     g_ForearmAngleZ -= 0.01f*dx;
+    //     g_ForearmAngleX += 0.01f*dy;
     
-        // // Atualizamos as variáveis globais para armazenar a posição atual do
-        // // cursor como sendo a última posição conhecida do cursor.
-        // g_LastCursorPosX = xpos;
-        // g_LastCursorPosY = ypos;
-    }
+    //     // Atualizamos as variáveis globais para armazenar a posição atual do
+    //     // cursor como sendo a última posição conhecida do cursor.
+    //     g_LastCursorPosX = xpos;
+    //     g_LastCursorPosY = ypos;
+    // }
+
+    // if (g_MiddleMouseButtonPressed)
+    // {
+    //     // // Deslocamento do cursor do mouse em x e y de coordenadas de tela!
+    //     // float dx = xpos - g_LastCursorPosX;
+    //     // float dy = ypos - g_LastCursorPosY;
+    
+    //     // // Atualizamos parâmetros da antebraço com os deslocamentos
+    //     // g_TorsoPositionX += 0.01f*dx;
+    //     // g_TorsoPositionY -= 0.01f*dy;
+    
+    //     // // Atualizamos as variáveis globais para armazenar a posição atual do
+    //     // // cursor como sendo a última posição conhecida do cursor.
+    //     // g_LastCursorPosX = xpos;
+    //     // g_LastCursorPosY = ypos;
+    // }
 }
 
 // Função callback chamada sempre que o usuário movimenta a "rodinha" do mouse.
