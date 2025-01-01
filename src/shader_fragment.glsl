@@ -24,11 +24,14 @@ uniform mat4 projection;
 #define PLANE  2
 #define AIRPLANE 3
 #define TREE 4
+#define LAKE 5
 uniform int object_id;
 
 // Parâmetros da axis-aligned bounding box (AABB) do modelo
 uniform vec4 bbox_min;
 uniform vec4 bbox_max;
+
+uniform float time_for_shader;
 
 // Variáveis para acesso das imagens de textura
 uniform sampler2D TextureImage0;
@@ -74,9 +77,6 @@ void main()
     float V = 0.0;
 
     vec3 Kd;
-    vec3 Kd0;
-    vec3 Kd1;
-    vec3 Kd2;
     vec3 Ka;
 
     if ( object_id == SPHERE )
@@ -109,7 +109,7 @@ void main()
         U = 1.0 - U;
 
         Kd = texture(TextureImage0, vec2(U,V)).rgb;
-        Ka = vec3(0.1, 0.1, 0.1);
+        Ka = vec3(0.0, 0.0, 0.0);
     }
     else if ( object_id == BUNNY )
     {
@@ -131,11 +131,16 @@ void main()
         float minz = bbox_min.z;
         float maxz = bbox_max.z;
 
-        U = (position_model.x - minx) / (maxx - minx);
-        V = (position_model.y - miny) / (maxy - miny);
+        float centerX = (maxx + minx) / 2.0;
+        float centerZ = (maxz + minz) / 2.0;
 
-        Kd = texture(TextureImage0, vec2(U,V)).rgb;
-        Ka = vec3(0.1, 0.1, 0.1);
+        float scaleFactor = 5.0 + 0.1 * sin(time_for_shader);
+
+        U = scaleFactor * ((position_model.x - centerX) / (maxx - minx));
+        V = scaleFactor * ((position_model.z - centerZ) / (maxz - minz));
+
+        Kd = texture(TextureImage4, vec2(U,V)).rgb;
+        Ka = vec3(0.0, 0.0, 0.0);
     }
     else if ( object_id == PLANE )
     {
@@ -144,7 +149,7 @@ void main()
         V = texcoords.y*500;
 
         Kd = texture(TextureImage2, vec2(U,V)).rgb;
-        Ka = vec3(0.1, 0.1, 0.1);
+        Ka = vec3(0.0, 0.0, 0.0);
     }
     else if ( object_id == AIRPLANE )
     {
@@ -152,27 +157,30 @@ void main()
         V = texcoords.y;
 
         Kd = texture(TextureImage1, vec2(U,V)).rgb;
-        Ka = vec3(0.1, 0.1, 0.1);
+        Ka = vec3(0.0, 0.0, 0.0);
     }
     else if ( object_id == TREE )
     {
         U = texcoords.x;
         V = texcoords.y;
 
-        //Kd0 = texture(TextureImage3, vec2(U,V)).rgb;
-        //Kd1 = texture(TextureImage4, vec2(U,V)).rgb;
-        //Kd2 = texture(TextureImage5, vec2(U,V)).rgb;
-
-        //Kd = Kd0 + Kd1 + Kd2;
         Kd = texture(TextureImage3, vec2(U,V)).rgb;
-        Ka = vec3(0.1, 0.1, 0.1);
+        Ka = vec3(0.0, 0.0, 0.0);
+    }
+    else if ( object_id == LAKE )
+    {
+        U = texcoords.x*1000;
+        V = texcoords.y*1000;
+
+        Kd = texture(TextureImage4, vec2(U,V)).rgb;
+        Ka = vec3(0.0,0.0,0.0);
     }
 
     // Equação de Iluminação
     float lambert = max(0.0,dot(n,l));
     float antilambert = max(0.0,dot(n,-l)) * 0.1;
 
-    color.rgb = Kd * (lambert + antilambert);
+    color.rgb = (Kd * (lambert + antilambert)) + Ka;
 
     // NOTE: Se você quiser fazer o rendering de objetos transparentes, é
     // necessário:

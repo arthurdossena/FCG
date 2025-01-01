@@ -234,7 +234,6 @@ std::random_device rd;
 std::mt19937 gen(rd()); // Gerador de números aleatórios
 std::uniform_real_distribution<> dis(-50.0, 50.0); // Geração de números entre -500 e 500
 
-
 // Variáveis que definem um programa de GPU (shaders). Veja função LoadShadersFromFiles().
 GLuint g_GpuProgramID = 0;
 GLint g_model_uniform;
@@ -324,10 +323,8 @@ int main(int argc, char* argv[])
     LoadTextureImage("../../data/tc-earth_daymap_surface.jpg");      // TextureImage0
     LoadTextureImage("../../data/PlanesSurface_Color.jpg");          // TextureImage1
     LoadTextureImage("../../data/forest_ground.jpg");                // TextureImage2
-
     LoadTextureImage("../../data/T_Pine_02_D.TGA");                  // TextureImage3
-    // LoadTextureImage("../../data/T_Pine_02_N.TGA");                  // TextureImage4
-    // LoadTextureImage("../../data/T_Pine_02_OP.tga");                 // TextureImage5
+    LoadTextureImage("../../data/water_texture.jpg");                // TextureImage4
 
     // Construímos a representação de objetos geométricos através de malhas de triângulos
     // ObjModel spheremodel("../../data/sphere.obj");
@@ -349,6 +346,10 @@ int main(int argc, char* argv[])
     ObjModel treemodel("../../data/SM_Pine_b_04.obj");
     ComputeNormals(&treemodel);
     BuildTrianglesAndAddToVirtualScene(&treemodel);
+
+    ObjModel lakemodel("../../data/lake.obj");
+    ComputeNormals(&lakemodel);
+    BuildTrianglesAndAddToVirtualScene(&lakemodel);
 
     if ( argc > 1 )
     {
@@ -432,6 +433,10 @@ int main(int argc, char* argv[])
         float nearplane = -0.1f;  // Posição do "near plane"
         float farplane  = -150.0f; // Posição do "far plane"
 
+        // Passa o tempo como variável pro seno animar a textura no shader_fragment, NÃO MEXER!
+        float time_for_shader = (float)glfwGetTime();
+        glUniform1f(glGetUniformLocation(CreateGpuProgram(LoadShader_Vertex("../../src/shader_vertex.glsl"), LoadShader_Fragment("../../src/shader_fragment.glsl")), "time_for_shader"), time_for_shader);
+
         if (g_UsePerspectiveProjection)
         {
             // Projeção Perspectiva.
@@ -466,6 +471,7 @@ int main(int argc, char* argv[])
         #define PLANE  2
         #define AIRPLANE 3
         #define TREE 4
+        #define LAKE 5
 
         // // Desenhamos o modelo da esfera
         // model = Matrix_Translate(-10.0f,0.0f,0.0f);
@@ -486,6 +492,12 @@ int main(int argc, char* argv[])
         glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
         glUniform1i(g_object_id_uniform, PLANE);
         DrawVirtualObject("the_plane");
+
+        model = Matrix_Translate(0.0f,-1.09f,0.0f)
+              * Matrix_Scale(8.0f, 1.0f, 8.0f);
+        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, BUNNY);
+        DrawVirtualObject("lake");
 
         model = Matrix_Translate(g_TorsoPositionX, g_TorsoPositionY, g_TorsoPositionZ)
               * Matrix_Rotate_Y(g_CameraTheta + M_PI)
@@ -538,12 +550,12 @@ int main(int argc, char* argv[])
 
 
         // Movimenta câmera para frente sempre
-        torso_position += camera_view_vector/norm(camera_view_vector) * speed * delta_t;
+        // torso_position += camera_view_vector/norm(camera_view_vector) * speed * delta_t;
         if (tecla_W_pressionada)
             torso_position += camera_view_vector/norm(camera_view_vector) * speed * delta_t;
-        // if (tecla_S_pressionada)
-        //     // Movimenta câmera para trás
-        //     torso_position -= camera_view_vector/norm(camera_view_vector) * speed * delta_t;
+        if (tecla_S_pressionada)
+            // Movimenta câmera para trás
+            torso_position -= camera_view_vector/norm(camera_view_vector) * speed * delta_t;
         if (tecla_D_pressionada)
             // Movimenta câmera para direita
             torso_position += crossproduct(camera_up_vector,-camera_view_vector)/norm(crossproduct(camera_up_vector,-camera_view_vector)) * speed * delta_t;
@@ -1217,7 +1229,6 @@ void CursorPosCallback(GLFWwindow* window, double xpos, double ypos)
     // cursor como sendo a última posição conhecida do cursor.
     g_LastCursorPosX = xpos;
     g_LastCursorPosY = ypos;
-
 
     // if (g_RightMouseButtonPressed)
     // {
