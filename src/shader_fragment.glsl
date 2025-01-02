@@ -20,11 +20,11 @@ uniform mat4 projection;
 
 // Identificador que define qual objeto está sendo desenhado no momento
 #define SPHERE 0
-#define BUNNY  1
+#define LAKE  1
 #define PLANE  2
 #define AIRPLANE 3
 #define TREE 4
-#define LAKE 5
+#define BURNING 5
 uniform int object_id;
 
 // Parâmetros da axis-aligned bounding box (AABB) do modelo
@@ -111,7 +111,7 @@ void main()
         Kd = texture(TextureImage0, vec2(U,V)).rgb;
         Ka = vec3(0.0, 0.0, 0.0);
     }
-    else if ( object_id == BUNNY )
+    else if ( object_id == LAKE )
     {
         // PREENCHA AQUI as coordenadas de textura do coelho, computadas com
         // projeção planar XY em COORDENADAS DO MODELO. Utilize como referência
@@ -167,13 +167,13 @@ void main()
         Kd = texture(TextureImage3, vec2(U,V)).rgb;
         Ka = vec3(0.0, 0.0, 0.0);
     }
-    else if ( object_id == LAKE )
+    else if ( object_id == BURNING)
     {
-        U = texcoords.x*1000;
-        V = texcoords.y*1000;
+        U = texcoords.x;
+        V = texcoords.y;
 
-        Kd = texture(TextureImage4, vec2(U,V)).rgb;
-        Ka = vec3(0.0,0.0,0.0);
+        Kd = vec3(0.35, 0.05, 0.0) + texture(TextureImage5, vec2(U,V)).rgb;
+        Ka = vec3(0.0, 0.0, 0.0);
     }
 
     // Equação de Iluminação

@@ -226,13 +226,20 @@ bool left_turn = false;
 
 float plane_rotation = 0.0f;
 
+int last_second = -1;
+int burning_delay = 20;
+
 std::vector<std::pair<float, float>> trees;
-int num_objects = 500;
+int num_objects = 200;
 double radius = 10.0;
+
+std::vector<int> trees_status(num_objects, 0);
+std::vector<float> burning_start_time(num_objects, -1.0f);
 
 std::random_device rd;
 std::mt19937 gen(rd()); // Gerador de números aleatórios
-std::uniform_real_distribution<> dis(-50.0, 50.0); // Geração de números entre -500 e 500
+std::uniform_real_distribution<> dis(-35.0, 35.0); // Geração de números entre -35 e 35
+std::uniform_int_distribution<> int_dis(0, num_objects);
 
 // Variáveis que definem um programa de GPU (shaders). Veja função LoadShadersFromFiles().
 GLuint g_GpuProgramID = 0;
@@ -325,6 +332,7 @@ int main(int argc, char* argv[])
     LoadTextureImage("../../data/forest_ground.jpg");                // TextureImage2
     LoadTextureImage("../../data/T_Pine_02_D.TGA");                  // TextureImage3
     LoadTextureImage("../../data/water_texture.jpg");                // TextureImage4
+    LoadTextureImage("../../data/madeira.jpg");                      // TextureImage5
 
     // Construímos a representação de objetos geométricos através de malhas de triângulos
     // ObjModel spheremodel("../../data/sphere.obj");
@@ -467,11 +475,11 @@ int main(int argc, char* argv[])
         glUniformMatrix4fv(g_projection_uniform , 1 , GL_FALSE , glm::value_ptr(projection));
 
         #define SPHERE 0
-        #define BUNNY  1
+        #define LAKE  1
         #define PLANE  2
         #define AIRPLANE 3
         #define TREE 4
-        #define LAKE 5
+        #define BURNING 5
 
         // // Desenhamos o modelo da esfera
         // model = Matrix_Translate(-10.0f,0.0f,0.0f);
@@ -496,7 +504,7 @@ int main(int argc, char* argv[])
         model = Matrix_Translate(0.0f,-1.09f,0.0f)
               * Matrix_Scale(8.0f, 1.0f, 8.0f);
         glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, BUNNY);
+        glUniform1i(g_object_id_uniform, LAKE);
         DrawVirtualObject("lake");
 
         model = Matrix_Translate(g_TorsoPositionX, g_TorsoPositionY, g_TorsoPositionZ)
@@ -509,13 +517,46 @@ int main(int argc, char* argv[])
         DrawVirtualObject("Plane1");
         DrawVirtualObject("Motor");
 
+        // Contador de segundos inteiros. Faz uma árvore aleatória queimar a cada tantos segundos.
+        int current_second = static_cast<int>(time_for_shader);
+        if(current_second != last_second){
+            last_second = current_second;
+            if(current_second%burning_delay == 0){
+                int tree_index = int_dis(gen);
+                if(trees_status[tree_index] == 0){
+                    trees_status[tree_index] = 1; // A árvore começa a pegar fogo
+                    burning_start_time[tree_index] = time_for_shader;
+                }
+            }
+        }
+
         for(int i=0; i<num_objects; i++){
-            model = Matrix_Translate(trees[i].first,-1.1f,trees[i].second)
-                * Matrix_Scale(0.001f,0.001f,0.001f);
-            glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-            glUniform1i(g_object_id_uniform, TREE);
-            DrawVirtualObject("SM_Pine_b_04");
-            //DrawVirtualObject("SM_Pine_b_04_LOD2");
+            if(trees_status[i]==0){
+                // Árvore normal
+                model = Matrix_Translate(trees[i].first,-1.1f,trees[i].second)
+                      * Matrix_Scale(0.001f,0.001f,0.001f);
+                glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+                glUniform1i(g_object_id_uniform, TREE);
+                DrawVirtualObject("SM_Pine_b_04");
+            }
+            else if(trees_status[i]==1){
+                // Árvore queimando
+                if (time_for_shader - burning_start_time[i] >= (float)burning_delay){ //Se a árvore já estiver queimando há tantos segundos, ela é destruída
+                    trees_status[i] = 2;
+                }
+                else{
+                    model = Matrix_Translate(trees[i].first,-1.1f,trees[i].second)
+                        * Matrix_Scale(0.001f,0.001f,0.001f);
+                    glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+                    glUniform1i(g_object_id_uniform, BURNING);
+                    DrawVirtualObject("SM_Pine_b_04");
+                }
+            }
+            else if(trees_status[i]==2){
+                // Árvore destruída
+                continue;
+            }
+
         }
 
         // Imprimimos na tela os ângulos de Euler que controlam a rotação do
