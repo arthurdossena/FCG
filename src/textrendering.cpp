@@ -11,6 +11,8 @@
 #include "utils.h"
 #include "dejavufont.h"
 
+#include <cstring>
+
 GLuint CreateGpuProgram(GLuint vertex_shader_id, GLuint fragment_shader_id); // Função definida em main.cpp
 
 const GLchar* const textvertexshader_source = ""
@@ -303,4 +305,28 @@ void TextRendering_PrintMatrixVectorProductDivW(GLFWwindow* window, glm::mat4 M,
     TextRendering_PrintString(window, buffer, x, y - 2*lineheight, scale);
     snprintf(buffer, 90, "[%+0.2f %+0.2f %+0.2f %+0.2f][%+0.2f]     [%+0.2f]        [%+0.2f]\n", M[0][3], M[1][3], M[2][3], M[3][3], v[3], r[3], r[3]/w);
     TextRendering_PrintString(window, buffer, x, y - 3*lineheight, scale);
+}
+
+float CalculateTextWidth(GLFWwindow* window, const char* text, float scale) {
+    int width, height;
+    glfwGetWindowSize(window, &width, &height);
+
+    float sx = scale * textscale / width; // Escala horizontal
+    float textWidth = 0.0f;
+
+    for (size_t i = 0; i < strlen(text); ++i) {
+        // Encontrar o glyph para o caractere
+        texture_glyph_t* glyph = nullptr;
+        for (size_t j = 0; j < dejavufont.glyphs_count; ++j) {
+            if (dejavufont.glyphs[j].codepoint == (uint32_t)text[i]) {
+                glyph = &dejavufont.glyphs[j];
+                break;
+            }
+        }
+        if (glyph) {
+            textWidth += glyph->advance_x * sx; // Soma o avanço horizontal
+        }
+    }
+
+    return textWidth;
 }

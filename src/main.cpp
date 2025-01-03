@@ -140,6 +140,7 @@ void TextRendering_PrintVector(GLFWwindow* window, glm::vec4 v, float x, float y
 void TextRendering_PrintMatrixVectorProduct(GLFWwindow* window, glm::mat4 M, glm::vec4 v, float x, float y, float scale = 1.0f);
 void TextRendering_PrintMatrixVectorProductMoreDigits(GLFWwindow* window, glm::mat4 M, glm::vec4 v, float x, float y, float scale = 1.0f);
 void TextRendering_PrintMatrixVectorProductDivW(GLFWwindow* window, glm::mat4 M, glm::vec4 v, float x, float y, float scale = 1.0f);
+float CalculateTextWidth(GLFWwindow* window, const char* text, float scale);
 
 // Funções abaixo renderizam como texto na janela OpenGL algumas matrizes e
 // outras informações do programa. Definidas após main().
@@ -234,7 +235,8 @@ bool left_turn = false;
 float plane_rotation = 0.0f;
 
 int last_second = -1;
-int burning_delay = 20;
+int burning_delay = 10;
+int burning_time = 25;
 
 std::vector<std::pair<float, float>> trees;
 int num_objects = 200;
@@ -574,7 +576,7 @@ int main(int argc, char* argv[])
             }
             else if(trees_status[i]==1){
                 // Árvore queimando
-                if (time_for_shader - burning_start_time[i] >= (float)burning_delay){ //Se a árvore já estiver queimando há tantos segundos, ela é destruída
+                if (time_for_shader - burning_start_time[i] >= (float)burning_time){ //Se a árvore já estiver queimando há tantos segundos, ela é destruída
                     trees_status[i] = 2;
                 }
                 else{
@@ -624,7 +626,7 @@ int main(int argc, char* argv[])
 
 
         // Movimenta câmera para frente sempre
-        // torso_position += camera_view_vector/norm(camera_view_vector) * speed * delta_t;
+        //  torso_position += camera_view_vector/norm(camera_view_vector) * speed * delta_t;
         if (tecla_W_pressionada)
             torso_position += camera_view_vector/norm(camera_view_vector) * speed * delta_t;
         if (tecla_S_pressionada)
@@ -1825,12 +1827,16 @@ void GameOverScreen(GLFWwindow* window) {
     float charwidth = TextRendering_CharWidth(window);
 
     const char* gameOverText = "Game Over";
-    TextRendering_PrintString(window, gameOverText, -0.2f - (strlen(gameOverText) + 1) * charwidth, 
-                              1.0f - 20.0f * lineheight, 8.0f);  // Centralizar um pouco mais para cima
+    float gameOverScale = 5.0f;
+    float gameOverWidth = CalculateTextWidth(window, gameOverText, gameOverScale);
+    TextRendering_PrintString(window, gameOverText, -gameOverWidth/2.0f, 
+                              1.0f - 20.0f * lineheight, gameOverScale);  // Centralizar um pouco mais para cima
 
     const char* optionsText = "Pressione R para reiniciar ou Q para sair";
-    TextRendering_PrintString(window, optionsText, -0.5f - (strlen(optionsText) + 1) * charwidth, 
-                              1.0f - 40.0f * lineheight, 5.0f);  // Posição abaixo de "Game Over
+    float optionsScale = 1.5f;
+    float optionsWidth = CalculateTextWidth(window, optionsText, optionsScale);
+    TextRendering_PrintString(window, optionsText, -optionsWidth/2.0f, 
+                              1.0f - 30.0f * lineheight, optionsScale);  // Posição abaixo de "Game Over
 
     glfwSwapBuffers(window);
     glfwPollEvents();
