@@ -25,6 +25,7 @@ uniform mat4 projection;
 #define AIRPLANE 3
 #define TREE 4
 #define BURNING 5
+#define WATERDROP 6
 uniform int object_id;
 
 // Parâmetros da axis-aligned bounding box (AABB) do modelo
@@ -67,7 +68,7 @@ void main()
     vec4 n = normalize(normal);
 
     // Vetor que define o sentido da fonte de luz em relação ao ponto atual.
-    vec4 l = normalize(vec4(1.0,1.0,0.0,0.0));
+    vec4 l = normalize(vec4(0.0,1.0,0.0,0.0));
 
     // Vetor que define o sentido da câmera em relação ao ponto atual.
     vec4 v = normalize(camera_position - p);
@@ -78,6 +79,8 @@ void main()
 
     vec3 Kd;
     vec3 Ka;
+    vec3 Ks;
+    float q;
 
     if ( object_id == SPHERE )
     {
@@ -110,6 +113,8 @@ void main()
 
         Kd = texture(TextureImage0, vec2(U,V)).rgb;
         Ka = vec3(0.0, 0.0, 0.0);
+        Ks = vec3(0.0, 0.0, 0.0);
+        q = 1.0;
     }
     else if ( object_id == LAKE )
     {
@@ -141,6 +146,8 @@ void main()
 
         Kd = texture(TextureImage4, vec2(U,V)).rgb;
         Ka = vec3(0.0, 0.0, 0.0);
+        Ks = vec3(1.0, 1.0, 1.0);
+        q = 64.0;
     }
     else if ( object_id == PLANE )
     {
@@ -150,6 +157,8 @@ void main()
 
         Kd = texture(TextureImage2, vec2(U,V)).rgb;
         Ka = vec3(0.0, 0.0, 0.0);
+        Ks = vec3(0.0, 0.0, 0.0);
+        q = 1.0;
     }
     else if ( object_id == AIRPLANE )
     {
@@ -158,6 +167,8 @@ void main()
 
         Kd = texture(TextureImage1, vec2(U,V)).rgb;
         Ka = vec3(0.0, 0.0, 0.0);
+        Ks = vec3(0.0, 0.0, 0.0);
+        q = 1.0;
     }
     else if ( object_id == TREE )
     {
@@ -166,6 +177,8 @@ void main()
 
         Kd = texture(TextureImage3, vec2(U,V)).rgb;
         Ka = vec3(0.0, 0.0, 0.0);
+        Ks = vec3(0.0, 0.0, 0.0);
+        q = 1.0;
     }
     else if ( object_id == BURNING)
     {
@@ -174,13 +187,28 @@ void main()
 
         Kd = vec3(0.35, 0.05, 0.0) + texture(TextureImage5, vec2(U,V)).rgb;
         Ka = vec3(0.0, 0.0, 0.0);
+        Ks = vec3(0.0, 0.0, 0.0);
+        q = 1.0;
+    }
+    else if ( object_id == WATERDROP )
+    {
+        Kd = vec3(0.0, 0.2, 1.0);
+        Ka = vec3(0.0, 0.0, 0.0);
+        Ks = vec3(0.0, 0.0, 0.0);
+        q = 1.0;
     }
 
     // Equação de Iluminação
     float lambert = max(0.0,dot(n,l));
     float antilambert = max(0.0,dot(n,-l)) * 0.1;
 
-    color.rgb = (Kd * (lambert + antilambert)) + Ka;
+    vec4 r = normalize(2.0 * dot(l, n) * n - l);
+    vec3 phong_specular_term  = Ks * pow(max(0.0, dot(r, v)), q);
+
+    if(object_id == WATERDROP)
+        color.rgb = Kd;
+    else
+        color.rgb = (Kd * (lambert + phong_specular_term)) + Ka;
 
     // NOTE: Se você quiser fazer o rendering de objetos transparentes, é
     // necessário:

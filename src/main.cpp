@@ -228,7 +228,9 @@ bool tecla_D_pressionada = false;
 bool tecla_A_pressionada = false;
 bool tecla_W_pressionada = false;
 bool tecla_S_pressionada = false;
+bool spacebar_pressionada = false;
 
+bool release_water = false;
 bool right_turn = false;
 bool left_turn = false;
 
@@ -246,6 +248,8 @@ bool gameOver = false;
 
 std::vector<int> trees_status(num_objects, 0);
 std::vector<float> burning_start_time(num_objects, -1.0f);
+
+std::vector<glm::vec3> waterdrops;
 
 std::random_device rd;
 std::mt19937 gen(rd()); // Gerador de números aleatórios
@@ -370,6 +374,10 @@ int main(int argc, char* argv[])
     ComputeNormals(&lakemodel);
     BuildTrianglesAndAddToVirtualScene(&lakemodel);
 
+    ObjModel waterdropmodel("../../data/water_drop.obj");
+    ComputeNormals(&waterdropmodel);
+    BuildTrianglesAndAddToVirtualScene(&waterdropmodel);
+
     if ( argc > 1 )
     {
         ObjModel model(argv[1]);
@@ -491,6 +499,7 @@ int main(int argc, char* argv[])
         #define AIRPLANE 3
         #define TREE 4
         #define BURNING 5
+        #define WATERDROP 6
 
         // // Desenhamos o modelo da esfera
         // model = Matrix_Translate(-10.0f,0.0f,0.0f);
@@ -551,6 +560,31 @@ int main(int argc, char* argv[])
 			CheckUserInputDuringGameOver(window, gameOver);  // Captura entrada do usuário
 			continue;  // Pula o restante do loop, esperando que o usuário escolha uma opção
 		}
+
+        // Lógica do water drop
+        if(release_water)
+            waterdrops.emplace_back(g_TorsoPositionX, g_TorsoPositionY, g_TorsoPositionZ);
+        
+        
+        for (size_t i = 0; i < waterdrops.size(); ++i) {
+            waterdrops[i].y -= 0.1f; // Configurar direito
+
+            glm::mat4 model = Matrix_Translate(waterdrops[i].x, waterdrops[i].y, waterdrops[i].z)
+                            * Matrix_Rotate_Y(g_CameraTheta + M_PI)
+                            * Matrix_Rotate_X(g_CameraPhi + M_PI)
+                            * Matrix_Scale(0.15f, 0.15f, 0.15f);
+
+            glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model));
+            glUniform1i(g_object_id_uniform, WATERDROP);
+            DrawVirtualObject("water_drop");
+        }
+
+        waterdrops.erase(
+            std::remove_if(waterdrops.begin(), waterdrops.end(), [](const glm::vec3& drop) {
+                return drop.y < -1.0f;
+            }),
+            waterdrops.end()
+        );
 
         // Contador de segundos inteiros. Faz uma árvore aleatória queimar a cada tantos segundos.
         int current_second = static_cast<int>(time_for_shader);
@@ -639,6 +673,13 @@ int main(int argc, char* argv[])
             // Movimenta câmera para esquerda
             torso_position += crossproduct(camera_up_vector,camera_view_vector)/norm(crossproduct(camera_up_vector,camera_view_vector)) * speed * delta_t;
         
+        if(spacebar_pressionada){
+            release_water = true;
+        }
+        else{
+            release_water = false;
+        }
+
         if(right_turn){
             if(plane_rotation<0.7f){
                 plane_rotation += 0.15f;
@@ -1508,6 +1549,24 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
 
         else if (action == GLFW_REPEAT)
             // Usuário está segurando a tecla D e o sistema operacional está
+            // disparando eventos de repetição. Neste caso, não precisamos
+            // atualizar o estado da tecla, pois antes de um evento REPEAT
+            // necessariamente deve ter ocorrido um evento PRESS.
+            ;
+    }
+
+    if (key == GLFW_KEY_SPACE)
+    {
+        if (action == GLFW_PRESS)
+            // Usuário apertou a tecla espaço, então atualizamos o estado para pressionada
+            spacebar_pressionada = true;
+
+        else if (action == GLFW_RELEASE)
+            // Usuário largou a tecla espaço, então atualizamos o estado para NÃO pressionada
+            spacebar_pressionada = false;
+
+        else if (action == GLFW_REPEAT)
+            // Usuário está segurando a tecla espaço e o sistema operacional está
             // disparando eventos de repetição. Neste caso, não precisamos
             // atualizar o estado da tecla, pois antes de um evento REPEAT
             // necessariamente deve ter ocorrido um evento PRESS.
