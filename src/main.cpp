@@ -51,6 +51,9 @@
 #include "utils.h"
 #include "matrices.h"
 
+// Header com as funções de colisão	
+#include "collisions.h"
+
 // Estrutura que representa um modelo geométrico carregado a partir de um
 // arquivo ".obj". Veja https://en.wikipedia.org/wiki/Wavefront_.obj_file .
 struct ObjModel
@@ -109,7 +112,6 @@ struct ObjModel
     }
 };
 
-
 // Declaração de funções utilizadas para pilha de matrizes de modelagem.
 void PushMatrix(glm::mat4 M);
 void PopMatrix(glm::mat4& M);
@@ -154,6 +156,11 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mode
 void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
 void CursorPosCallback(GLFWwindow* window, double xpos, double ypos);
 void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
+
+//Funções de Game Over
+void GameOverScreen(GLFWwindow* window);
+void CheckUserInputDuringGameOver(GLFWwindow* window, bool &gameOver);
+void RestartGame();
 
 // Definimos uma estrutura que armazenará dados necessários para renderizar
 // cada objeto da cena virtual.
@@ -232,6 +239,8 @@ int burning_delay = 20;
 std::vector<std::pair<float, float>> trees;
 int num_objects = 200;
 double radius = 10.0;
+
+bool gameOver = false;
 
 std::vector<int> trees_status(num_objects, 0);
 std::vector<float> burning_start_time(num_objects, -1.0f);
@@ -516,6 +525,30 @@ int main(int argc, char* argv[])
         glUniform1i(g_object_id_uniform, AIRPLANE);
         DrawVirtualObject("Plane1");
         DrawVirtualObject("Motor");
+	
+        glm::vec3 airplane_position = glm::vec3(g_TorsoPositionX, g_TorsoPositionY, g_TorsoPositionZ);
+        float airplane_radius = 0.1f;
+        float plane_height = -1.1f; // O plano está a y = -1.1f
+
+		// Verificar colisão com o plano
+        if (checkCollisionWithPlane(airplane_position, airplane_radius, glm::vec3(0.0f, plane_height, 0.0f), plane_height)) {
+            gameOver = true;
+        }
+
+        // Verificar colisão com as árvores
+        for (int i = 0; i < num_objects; i++) {
+            glm::vec3 tree_position = glm::vec3(trees[i].first, -1.1f, trees[i].second);
+            if (checkCollisionWithTree(airplane_position, airplane_radius, tree_position, 1.0f)) {
+                gameOver = true;
+            }
+        }
+
+		// Verificar se ocorre Game Over
+		if (gameOver) {
+			GameOverScreen(window);  // Mostrar a tela de Game Over
+			CheckUserInputDuringGameOver(window, gameOver);  // Captura entrada do usuário
+			continue;  // Pula o restante do loop, esperando que o usuário escolha uma opção
+		}
 
         // Contador de segundos inteiros. Faz uma árvore aleatória queimar a cada tantos segundos.
         int current_second = static_cast<int>(time_for_shader);
@@ -1782,6 +1815,65 @@ void PrintObjModelInfo(ObjModel* model)
     printf("\n");
   }
 }
+
+void GameOverScreen(GLFWwindow* window) {
+    glClearColor(0.0f, 0.0f, 1.0f, 1.0f);
+	
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	
+    float lineheight = TextRendering_LineHeight(window);
+    float charwidth = TextRendering_CharWidth(window);
+
+    const char* gameOverText = "Game Over";
+    TextRendering_PrintString(window, gameOverText, -0.2f - (strlen(gameOverText) + 1) * charwidth, 
+                              1.0f - 20.0f * lineheight, 8.0f);  // Centralizar um pouco mais para cima
+
+    const char* optionsText = "Pressione R para reiniciar ou Q para sair";
+    TextRendering_PrintString(window, optionsText, -0.5f - (strlen(optionsText) + 1) * charwidth, 
+                              1.0f - 40.0f * lineheight, 5.0f);  // Posição abaixo de "Game Over
+
+    glfwSwapBuffers(window);
+    glfwPollEvents();
+}
+
+void CheckUserInputDuringGameOver(GLFWwindow* window, bool &gameOver) {
+    if (gameOver) {
+        int state = glfwGetKey(window, GLFW_KEY_R);
+        if (state == GLFW_PRESS) {
+            RestartGame();
+            gameOver = false;  // Reseta o estado do jogo
+        }
+        else if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) {
+            glfwSetWindowShouldClose(window, GL_TRUE); // Fecha a janela
+        }
+    }
+}
+
+void RestartGame() {
+    // Resetar variáveis de posição do avião
+    g_TorsoPositionX = 0.0f;
+    g_TorsoPositionY = 5.0f;
+    g_TorsoPositionZ = 0.0f;
+
+    plane_rotation = 0.0f;
+
+    // Resetar as árvores e sua condição de queima
+    trees.clear();
+    trees_status.assign(num_objects, 0);
+
+    // Recriar objetos geométricos
+    ObjModel planemodel("../../data/plane.obj");
+    ComputeNormals(&planemodel);
+    BuildTrianglesAndAddToVirtualScene(&planemodel);
+
+    ObjModel airplanemodel("../../data/Plane1.obj");
+    ComputeNormals(&airplanemodel);
+    BuildTrianglesAndAddToVirtualScene(&airplanemodel);
+
+    // Redefina o tempo e outros parâmetros do jogo
+    last_second = 0;
+}
+
 
 // set makeprg=cd\ ..\ &&\ make\ run\ >/dev/null
 // vim: set spell spelllang=pt_br :
