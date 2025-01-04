@@ -251,6 +251,8 @@ int max_water = 100;
 int current_water = 0;
 int saved_trees = 0;
 
+int arvores_normais=0, arvores_incendiadas=0, arvores_destruidas=0, qualquer_outra_coisa=0;
+
 bool gameOver = false;
 
 std::vector<int> trees_status(num_objects, 0);
@@ -311,7 +313,6 @@ int main(int argc, char* argv[])
         fprintf(stderr, "ERROR: glfwCreateWindow() failed.\n");
         std::exit(EXIT_FAILURE);
     }
-
     // Definimos a função de callback que será chamada sempre que o usuário
     // pressionar alguma tecla do teclado ...
     glfwSetKeyCallback(window, KeyCallback);
@@ -1937,7 +1938,7 @@ void GameOverScreen(GLFWwindow* window) {
     float savedTreesScale = 1.5f;
     float savedTreesWidth = CalculateTextWidth(window, savedTreesText, savedTreesScale);
     TextRendering_PrintString(window, savedTreesText, -savedTreesWidth/2.0f, 
-                              1.0f - 25.0f * lineheight, savedTreesScale);  // Centralizar um pouco mais para cima
+                              1.0f - 25.0f * lineheight, savedTreesScale);
 
     const char* optionsText = "Pressione R para reiniciar ou Q para sair";
     float optionsScale = 1.5f;
@@ -1973,6 +1974,10 @@ void RestartGame() {
     // Resetar as árvores e sua condição de queima
     trees.clear();
     trees_status.assign(num_objects, 0);
+
+    // Resetar a quantidade de água atual e contador de ávrores salvas
+    current_water = 0;
+    saved_trees = 0;
 
     // Recriar objetos geométricos
     ObjModel planemodel("../../data/plane.obj");
