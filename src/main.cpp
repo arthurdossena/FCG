@@ -237,12 +237,15 @@ bool left_turn = false;
 float plane_rotation = 0.0f;
 
 int last_second = -1;
-int burning_delay = 10;
-int burning_time = 25;
+int burning_delay = 7;
+int burning_time = 20;
 
 std::vector<std::pair<float, float>> trees;
-int num_objects = 200;
-double radius = 10.0;
+int num_objects = 150;
+double radius = 9.0;
+
+int max_water = 150;
+int current_water = 0;
 
 bool gameOver = false;
 
@@ -253,7 +256,7 @@ std::vector<glm::vec3> waterdrops;
 
 std::random_device rd;
 std::mt19937 gen(rd()); // Gerador de números aleatórios
-std::uniform_real_distribution<> dis(-35.0, 35.0); // Geração de números entre -35 e 35
+std::uniform_real_distribution<> dis(-25.0, 25.0); // Geração de números entre -35 e 35
 std::uniform_int_distribution<> int_dis(0, num_objects);
 
 // Variáveis que definem um programa de GPU (shaders). Veja função LoadShadersFromFiles().
@@ -541,15 +544,24 @@ int main(int argc, char* argv[])
         float airplane_radius = 0.1f;
         float plane_height = -1.1f; // O plano está a y = -1.1f
 
+        // Verificar colisão com a área de abastecimento
+        if(checkCollisionPointCube(airplane_position, glm::vec3(-8.0f, plane_height, -8.0f), glm::vec3(8.0f, 0.0f, 8.0f))){
+            if(current_water < max_water)
+                current_water++;
+            else
+                current_water = max_water;
+        }
+        std::cout << "Water: " << current_water << "/" << max_water << std::endl;
+
 		// Verificar colisão com o plano
-        if (checkCollisionWithPlane(airplane_position, airplane_radius, glm::vec3(0.0f, plane_height, 0.0f), plane_height)) {
+        if (checkCollisionSpherePlane(airplane_position, airplane_radius, glm::vec3(0.0f, plane_height, 0.0f), plane_height)) {
             gameOver = true;
         }
 
         // Verificar colisão com as árvores
         for (int i = 0; i < num_objects; i++) {
             glm::vec3 tree_position = glm::vec3(trees[i].first, -1.1f, trees[i].second);
-            if (checkCollisionWithTree(airplane_position, airplane_radius, tree_position, 1.0f)) {
+            if (checkCollisionSphereSphere(airplane_position, airplane_radius, tree_position, 1.0f)) {
                 gameOver = true;
             }
         }
@@ -562,12 +574,13 @@ int main(int argc, char* argv[])
 		}
 
         // Lógica do water drop
-        if(release_water)
+        if(release_water){
             waterdrops.emplace_back(g_TorsoPositionX, g_TorsoPositionY, g_TorsoPositionZ);
-        
+            current_water--;
+        }        
         
         for (size_t i = 0; i < waterdrops.size(); ++i) {
-            waterdrops[i].y -= 0.1f; // Configurar direito
+            waterdrops[i].y -= 0.3f; // Configurar direito
 
             glm::mat4 model = Matrix_Translate(waterdrops[i].x, waterdrops[i].y, waterdrops[i].z)
                             * Matrix_Rotate_Y(g_CameraTheta + M_PI)
@@ -614,6 +627,15 @@ int main(int argc, char* argv[])
                     trees_status[i] = 2;
                 }
                 else{
+                    bool wasSaved = false;
+                    for(int j=0; j<waterdrops.size(); j++){
+                        glm::vec3 tree_position = glm::vec3(trees[i].first, -1.1f, trees[i].second);
+                        wasSaved = checkCollisionSphereSphere(waterdrops[j], 0.5f, tree_position, 1.0f);
+                        if (wasSaved){
+                            trees_status[i] = 0;
+                            break;
+                        }
+                    }
                     model = Matrix_Translate(trees[i].first,-1.1f,trees[i].second)
                         * Matrix_Scale(0.001f,0.001f,0.001f);
                     glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
@@ -660,16 +682,16 @@ int main(int argc, char* argv[])
 
 
         // Movimenta câmera para frente sempre
-        //  torso_position += camera_view_vector/norm(camera_view_vector) * speed * delta_t;
+          torso_position += camera_view_vector/norm(camera_view_vector) * speed * delta_t;
         if (tecla_W_pressionada)
-            torso_position += camera_view_vector/norm(camera_view_vector) * speed * delta_t;
-        if (tecla_S_pressionada)
-            // Movimenta câmera para trás
-            torso_position -= camera_view_vector/norm(camera_view_vector) * speed * delta_t;
+            torso_position += camera_view_vector/norm(camera_view_vector) * 1.5f * speed * delta_t;
+        // else if (tecla_S_pressionada)
+        //     // Movimenta câmera para trás
+        //     torso_position -= camera_view_vector/norm(camera_view_vector) * speed * delta_t;
         if (tecla_D_pressionada)
             // Movimenta câmera para direita
             torso_position += crossproduct(camera_up_vector,-camera_view_vector)/norm(crossproduct(camera_up_vector,-camera_view_vector)) * speed * delta_t;
-        if (tecla_A_pressionada)
+        else if (tecla_A_pressionada)
             // Movimenta câmera para esquerda
             torso_position += crossproduct(camera_up_vector,camera_view_vector)/norm(crossproduct(camera_up_vector,camera_view_vector)) * speed * delta_t;
         

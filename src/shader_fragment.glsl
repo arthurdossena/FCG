@@ -82,6 +82,8 @@ void main()
     vec3 Ks;
     float q;
 
+    vec3 phong_specular_term  = vec3(0,0,0);
+
     if ( object_id == SPHERE )
     {
         // PREENCHA AQUI as coordenadas de textura da esfera, computadas com
@@ -146,8 +148,13 @@ void main()
 
         Kd = texture(TextureImage4, vec2(U,V)).rgb;
         Ka = vec3(0.0, 0.0, 0.0);
-        Ks = vec3(1.0, 1.0, 1.0);
-        q = 64.0;
+        Ks = vec3(0.6, 0.6, 0.6);
+        q = 128.0;
+
+        vec4 h = normalize(v + l);
+
+        // Cálculo do termo especular usando Blinn-Phong
+        phong_specular_term = Ks * pow(max(0.0, dot(n, h)), q);
     }
     else if ( object_id == PLANE )
     {
@@ -166,7 +173,7 @@ void main()
         V = texcoords.y;
 
         Kd = texture(TextureImage1, vec2(U,V)).rgb;
-        Ka = vec3(0.0, 0.0, 0.0);
+        Ka = vec3(0.05, 0.05, 0.05);
         Ks = vec3(0.0, 0.0, 0.0);
         q = 1.0;
     }
@@ -200,15 +207,12 @@ void main()
 
     // Equação de Iluminação
     float lambert = max(0.0,dot(n,l));
-    float antilambert = max(0.0,dot(n,-l)) * 0.1;
-
-    vec4 r = normalize(2.0 * dot(l, n) * n - l);
-    vec3 phong_specular_term  = Ks * pow(max(0.0, dot(r, v)), q);
+    //float antilambert = max(0.0,dot(n,-l)) * 0.1;
 
     if(object_id == WATERDROP)
         color.rgb = Kd;
     else
-        color.rgb = (Kd * (lambert + phong_specular_term)) + Ka;
+        color.rgb = (Kd * lambert) + phong_specular_term + Ka;
 
     // NOTE: Se você quiser fazer o rendering de objetos transparentes, é
     // necessário:
