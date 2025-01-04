@@ -26,6 +26,7 @@ uniform mat4 projection;
 #define TREE 4
 #define BURNING 5
 #define WATERDROP 6
+#define SMOKE 7
 uniform int object_id;
 
 // Parâmetros da axis-aligned bounding box (AABB) do modelo
@@ -204,6 +205,13 @@ void main()
         Ks = vec3(0.0, 0.0, 0.0);
         q = 1.0;
     }
+    /*else if ( object_id == SMOKE )
+    {
+        Kd = vec3(0.2, 0.2, 0.2);
+        Ka = vec3(0.0, 0.0, 0.0);
+        Ks = vec3(0.0, 0.0, 0.0);
+        q = 1.0;
+    }*/
 
     // Equação de Iluminação
     float lambert = max(0.0,dot(n,l));
@@ -211,6 +219,8 @@ void main()
 
     if(object_id == WATERDROP)
         color.rgb = Kd;
+    //else if (object_id == SMOKE)
+    //    color.rgb = Kd;
     else
         color.rgb = (Kd * lambert) + phong_specular_term + Ka;
 

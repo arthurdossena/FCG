@@ -259,6 +259,8 @@ std::vector<int> trees_status(num_objects, 0);
 std::vector<float> burning_start_time(num_objects, -1.0f);
 
 std::vector<glm::vec3> waterdrops;
+std::vector<glm::vec3> smoke_clouds; // Guarda a altura, o tamanho e uma translação horizontal
+float smoke_horizontal=0.0f, smoke_height=0.0f, smoke_size=0.3f;
 
 std::random_device rd;
 std::mt19937 gen(rd()); // Gerador de números aleatórios
@@ -306,7 +308,7 @@ int main(int argc, char* argv[])
     // Criamos uma janela do sistema operacional, com 800 colunas e 600 linhas
     // de pixels, e com título "INF01047 ...".
     GLFWwindow* window;
-    window = glfwCreateWindow(800, 600, "INF01047 - 00325370 - Arthur Olinto Dossena", NULL, NULL);
+    window = glfwCreateWindow(800, 600, "INF01047 - Fireplane", NULL, NULL);
     if (!window)
     {
         glfwTerminate();
@@ -385,6 +387,10 @@ int main(int argc, char* argv[])
     ObjModel waterdropmodel("../../data/water_drop.obj");
     ComputeNormals(&waterdropmodel);
     BuildTrianglesAndAddToVirtualScene(&waterdropmodel);
+
+    ObjModel smokemodel("../../data/smoke.obj");
+    ComputeNormals(&smokemodel);
+    BuildTrianglesAndAddToVirtualScene(&smokemodel);
 
     if ( argc > 1 )
     {
@@ -508,6 +514,7 @@ int main(int argc, char* argv[])
         #define TREE 4
         #define BURNING 5
         #define WATERDROP 6
+        #define SMOKE 7
 
         // // Desenhamos o modelo da esfera
         // model = Matrix_Translate(-10.0f,0.0f,0.0f);
@@ -617,6 +624,17 @@ int main(int argc, char* argv[])
             }
         }
 
+        // Lógica pra fumaça 
+        // smoke_horizontal = 1.0f + (0.01f*sin(time_for_shader));
+        // if(smoke_height<4.5f){
+        //     smoke_height += 0.2f;
+        //     smoke_size += 0.1f;
+        // }
+        // else{
+        //     smoke_height = 0.0;
+        //     smoke_size = 0.3f;
+        // }
+
         for(int i=0; i<num_objects; i++){
             if(trees_status[i]==0){
                 // Árvore normal
@@ -647,6 +665,15 @@ int main(int argc, char* argv[])
                     glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
                     glUniform1i(g_object_id_uniform, BURNING);
                     DrawVirtualObject("SM_Pine_b_04");
+
+                    // Desenho da fumaça
+                    // model = Matrix_Translate(trees[i].first*smoke_horizontal, smoke_height,trees[i].second*smoke_horizontal)
+                    //         * Matrix_Rotate_Y(g_CameraTheta + M_PI)
+                    //         * Matrix_Rotate_X(g_CameraPhi)
+                    //         * Matrix_Scale(smoke_size,smoke_size,smoke_size);
+                    // glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+                    // glUniform1i(g_object_id_uniform, SMOKE);
+                    // DrawVirtualObject("smoke");
                 }
             }
             else if(trees_status[i]==2){
@@ -703,7 +730,7 @@ int main(int argc, char* argv[])
         else if (tecla_A_pressionada)
             // Movimenta câmera para esquerda
             torso_position += crossproduct(camera_up_vector,camera_view_vector)/norm(crossproduct(camera_up_vector,camera_view_vector)) * speed * delta_t;
-        
+
         if(spacebar_pressionada){
             release_water = true;
         }
