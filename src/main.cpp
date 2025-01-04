@@ -158,6 +158,9 @@ void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
 void CursorPosCallback(GLFWwindow* window, double xpos, double ypos);
 void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
 
+// Interface do usuário
+void UI(GLFWwindow* window);
+
 //Funções de Game Over
 void GameOverScreen(GLFWwindow* window);
 void CheckUserInputDuringGameOver(GLFWwindow* window, bool &gameOver);
@@ -222,7 +225,7 @@ float g_TorsoPositionZ = 0.0f;
 bool g_UsePerspectiveProjection = true;
 
 // Variável que controla se o texto informativo será mostrado na tela.
-bool g_ShowInfoText = true;
+bool g_ShowInfoText = false;
 
 bool tecla_D_pressionada = false;
 bool tecla_A_pressionada = false;
@@ -244,8 +247,9 @@ std::vector<std::pair<float, float>> trees;
 int num_objects = 150;
 double radius = 9.0;
 
-int max_water = 150;
+int max_water = 100;
 int current_water = 0;
+int saved_trees = 0;
 
 bool gameOver = false;
 
@@ -551,7 +555,7 @@ int main(int argc, char* argv[])
             else
                 current_water = max_water;
         }
-        std::cout << "Water: " << current_water << "/" << max_water << std::endl;
+        //std::cout << "Water: " << current_water << "/" << max_water << std::endl;
 
 		// Verificar colisão com o plano
         if (checkCollisionSpherePlane(airplane_position, airplane_radius, glm::vec3(0.0f, plane_height, 0.0f), plane_height)) {
@@ -574,7 +578,7 @@ int main(int argc, char* argv[])
 		}
 
         // Lógica do water drop
-        if(release_water){
+        if(release_water && current_water>0){
             waterdrops.emplace_back(g_TorsoPositionX, g_TorsoPositionY, g_TorsoPositionZ);
             current_water--;
         }        
@@ -632,7 +636,8 @@ int main(int argc, char* argv[])
                         glm::vec3 tree_position = glm::vec3(trees[i].first, -1.1f, trees[i].second);
                         wasSaved = checkCollisionSphereSphere(waterdrops[j], 0.5f, tree_position, 1.0f);
                         if (wasSaved){
-                            trees_status[i] = 0;
+                            trees_status[i] = 0; // Árvore salva
+                            saved_trees++;
                             break;
                         }
                     }
@@ -649,6 +654,9 @@ int main(int argc, char* argv[])
             }
 
         }
+
+        // Interface do usuário
+        UI(window);
 
         // Imprimimos na tela os ângulos de Euler que controlam a rotação do
         // terceiro cubo.
@@ -1899,6 +1907,17 @@ void PrintObjModelInfo(ObjModel* model)
   }
 }
 
+void UI(GLFWwindow* window){
+    float lineheight = TextRendering_LineHeight(window);
+    float charwidth = TextRendering_CharWidth(window);
+
+    std::string waterTextStr = "Agua: " + std::to_string(current_water) + "/" + std::to_string(max_water);
+    const char* waterText = waterTextStr.c_str();
+    float waterScale = 1.5f;
+    //float waterWidth = CalculateTextWidth(window, waterText, waterScale);
+    TextRendering_PrintString(window, waterText, -1.0f+charwidth, 0.98f-lineheight, waterScale);
+}
+
 void GameOverScreen(GLFWwindow* window) {
     glClearColor(0.0f, 0.0f, 1.0f, 1.0f);
 	
@@ -1912,6 +1931,13 @@ void GameOverScreen(GLFWwindow* window) {
     float gameOverWidth = CalculateTextWidth(window, gameOverText, gameOverScale);
     TextRendering_PrintString(window, gameOverText, -gameOverWidth/2.0f, 
                               1.0f - 20.0f * lineheight, gameOverScale);  // Centralizar um pouco mais para cima
+
+    std::string savedTreesTextStr = "Incendios apagados: " + std::to_string(saved_trees);
+    const char* savedTreesText = savedTreesTextStr.c_str();
+    float savedTreesScale = 1.5f;
+    float savedTreesWidth = CalculateTextWidth(window, savedTreesText, savedTreesScale);
+    TextRendering_PrintString(window, savedTreesText, -savedTreesWidth/2.0f, 
+                              1.0f - 25.0f * lineheight, savedTreesScale);  // Centralizar um pouco mais para cima
 
     const char* optionsText = "Pressione R para reiniciar ou Q para sair";
     float optionsScale = 1.5f;
