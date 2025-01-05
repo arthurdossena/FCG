@@ -11,6 +11,10 @@ uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
 
+// Variável para indicar se gouraud deve ser usado no objeto
+uniform bool gouraud_shading_uniform;
+
+
 // Atributos de vértice que serão gerados como saída ("out") pelo Vertex Shader.
 // ** Estes serão interpolados pelo rasterizador! ** gerando, assim, valores
 // para cada fragmento, os quais serão recebidos como entrada pelo Fragment
@@ -19,6 +23,7 @@ out vec4 position_world;
 out vec4 position_model;
 out vec4 normal;
 out vec2 texcoords;
+out vec4 gouraud_color;
 
 void main()
 {
@@ -63,5 +68,46 @@ void main()
 
     // Coordenadas de textura obtidas do arquivo OBJ (se existirem!)
     texcoords = texture_coefficients;
-}
+	
+	if (gouraud_shading_uniform) {
+        vec4 origin = vec4(0.0, 0.0, 0.0, 1.0);
+        vec4 position_camera = inverse(view) * origin;
 
+        vec3 Ks = vec3(0.8, 0.8, 0.8);
+        vec3 Kd = vec3(0.54, 0.45, 0.0);
+        float q = 80.0;
+        
+        // Calcula o vetor que representa a direção da câmera em relação ao ponto do vértice
+        vec4 v = normalize(position_camera - position_world);
+
+        // Calcula o vetor que representa a direção da fonte de luz em relação ao ponto do vértice
+        vec4 l = v;
+
+        // Calcula o Vetor médio para o modelo de iluminação de Blinn-Phong
+        vec4 hv = l;
+
+        // Normaliza a normal do vértice para garantir que tenha comprimento unitário
+        vec4 n = normalize(normal); 
+
+        // Definite a intensidade espectral da fonte de iluminação
+        vec3 I = vec3(1.0,1.0,1.0);
+
+        // Define o espectro da luz ambiente
+        vec3 Ia = vec3(0.05, 0.05, 0.05); 
+
+        // Termo difuso utilizando a lei dos cossenos de Lambert
+        vec3 lambert_diffuse_term = Kd * I * max(0, dot(n, l)); 
+
+        // Calcula o termo ambiente
+        vec3 ambient_term = Kd * Ia; 
+
+        //  Calcula o termo especular utilizando o modelo de iluminação de Blinn-Phong (reflexão especular)
+        vec3 blinn_phong_specular_term  = Ks * I * pow(max(0, dot(n, hv)), q); 
+
+        // Calcula o valor de iluminação difusa
+        float lambert = max(0, dot(n,l));
+
+		// Combina os termos difuso, ambiente e especular para calcular a cor final do vértice.
+        gouraud_color = vec4(lambert_diffuse_term + ambient_term + blinn_phong_specular_term, 1.0); 
+    }
+}
