@@ -35,6 +35,9 @@ uniform vec4 bbox_max;
 
 uniform float time_for_shader;
 
+uniform bool gouraud_shading_uniform;
+in vec4 gouraud_color;
+
 // Variáveis para acesso das imagens de textura
 uniform sampler2D TextureImage0;
 uniform sampler2D TextureImage1;
@@ -52,6 +55,11 @@ out vec4 color;
 
 void main()
 {
+	if (gouraud_shading_uniform){
+        color = gouraud_color;
+    } else {
+
+
     // Obtemos a posição da câmera utilizando a inversa da matriz que define o
     // sistema de coordenadas da câmera.
     vec4 origin = vec4(0.0, 0.0, 0.0, 1.0);
@@ -241,5 +249,5 @@ void main()
     // Cor final com correção gamma, considerando monitor sRGB.
     // Veja https://en.wikipedia.org/w/index.php?title=Gamma_correction&oldid=751281772#Windows.2C_Mac.2C_sRGB_and_TV.2Fvideo_standard_gammas
     color.rgb = pow(color.rgb, vec3(1.0,1.0,1.0)/2.2);
+	}
 } 
-
