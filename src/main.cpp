@@ -777,7 +777,7 @@ int main(int argc, char* argv[])
           torso_position += camera_view_vector/norm(camera_view_vector) * speed * delta_t;
         if (tecla_W_pressionada)
             torso_position += camera_view_vector/norm(camera_view_vector) * 1.5f * speed * delta_t;
-		}
+		
         // else if (tecla_S_pressionada)
         //     // Movimenta câmera para trás
         //     torso_position -= camera_view_vector/norm(camera_view_vector) * speed * delta_t;
@@ -794,7 +794,9 @@ int main(int argc, char* argv[])
         else{
             release_water = false;
         }
-
+		
+		}
+		
         if(right_turn){
             if(plane_rotation<0.7f){
                 plane_rotation += 0.15f;
