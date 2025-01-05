@@ -267,6 +267,21 @@ std::mt19937 gen(rd()); // Gerador de números aleatórios
 std::uniform_real_distribution<> dis(-25.0, 25.0); // Geração de números entre -35 e 35
 std::uniform_int_distribution<> int_dis(0, num_objects);
 
+glm::vec3 bezierCubic(float t, glm::vec3 p0, glm::vec3 p1, glm::vec3 p2, glm::vec3 p3) {
+    float u = 1.0f - t;
+    float tt = t * t;
+    float uu = u * u;
+    float uuu = uu * u;
+    float ttt = tt * t;
+
+    glm::vec3 p = uuu * p0; // (1 - t)^3 * p0
+    p += 3 * uu * t * p1;    // 3 * (1 - t)^2 * t * p1
+    p += 3 * u * tt * p2;    // 3 * (1 - t) * t^2 * p2
+    p += ttt * p3;           // t^3 * p3
+
+    return p;
+}
+
 // Variáveis que definem um programa de GPU (shaders). Veja função LoadShadersFromFiles().
 GLuint g_GpuProgramID = 0;
 GLint g_model_uniform;
@@ -275,6 +290,7 @@ GLint g_projection_uniform;
 GLint g_object_id_uniform;
 GLint g_bbox_min_uniform;
 GLint g_bbox_max_uniform;
+GLboolean gouraud_shading_uniform;
 
 // Número de texturas carregadas pela função LoadTextureImage()
 GLuint g_NumLoadedTextures = 0;
@@ -423,6 +439,14 @@ int main(int argc, char* argv[])
             trees.push_back({x, y});
         }
     }
+	
+	bool cutscenePlaying = true;
+	float cutsceneStartTime = glfwGetTime(); // Marca o tempo do início da cutscene
+	
+	glm::vec3 p0(0.0f, 10.0f, 0.0f);    // Ponto inicial
+	glm::vec3 p1(2.0f, 7.0f, 0.0f);    // Ponto de controle 1 (ajuste conforme necessário)
+	glm::vec3 p2(-2.0f, 6.0f, 0.0f);   // Ponto de controle 2 (ajuste conforme necessário)
+	glm::vec3 p3(0.0f, 5.0f, 0.0f);    // Ponto final (p3 fixo)
 
     // Ficamos em um loop infinito, renderizando, até que o usuário feche a janela
     while (!glfwWindowShouldClose(window))
@@ -516,6 +540,33 @@ int main(int argc, char* argv[])
         #define WATERDROP 6
         #define SMOKE 7
 
+				// Verifique o tempo
+		float currentTime = glfwGetTime();
+		float t = (currentTime - cutsceneStartTime) / 10.0f; // 10 segundos para a cutscene
+
+		if (t > 1.0f) {
+			t = 1.0f; // Limitar o valor de t para 1 após a cutscene
+			cutscenePlaying = false; // A cutscene terminou
+		}
+
+		if (cutscenePlaying) {
+		// Calcula a posição do avião na curva de Bezier usando a fórmula
+		glm::vec3 airplane_position = (1 - t) * (1 - t) * (1 - t) * p0 +
+									  3 * (1 - t) * (1 - t) * t * p1 +
+									  3 * (1 - t) * t * t * p2 +
+									  t * t * t * p3;
+
+		// Agora, mova o avião para a nova posição calculada
+		glm::mat4 model = Matrix_Translate(airplane_position.x, airplane_position.y, airplane_position.z)
+						  * Matrix_Rotate_Y(g_CameraTheta + M_PI)
+						  * Matrix_Rotate_X(g_CameraPhi)
+						  * Matrix_Scale(0.001f, 0.001f, 0.001f);
+
+		glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model));
+		glUniform1i(g_object_id_uniform, AIRPLANE);
+		DrawVirtualObject("Plane1");
+		}
+
         // // Desenhamos o modelo da esfera
         // model = Matrix_Translate(-10.0f,0.0f,0.0f);
         // glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
@@ -542,6 +593,7 @@ int main(int argc, char* argv[])
         glUniform1i(g_object_id_uniform, LAKE);
         DrawVirtualObject("lake");
 
+		if (!cutscenePlaying) {
         model = Matrix_Translate(g_TorsoPositionX, g_TorsoPositionY, g_TorsoPositionZ)
               * Matrix_Rotate_Y(g_CameraTheta + M_PI)
               * Matrix_Rotate_X(g_CameraPhi)
@@ -551,6 +603,7 @@ int main(int argc, char* argv[])
         glUniform1i(g_object_id_uniform, AIRPLANE);
         DrawVirtualObject("Plane1");
         DrawVirtualObject("Motor");
+		}
 	
         glm::vec3 airplane_position = glm::vec3(g_TorsoPositionX, g_TorsoPositionY, g_TorsoPositionZ);
         float airplane_radius = 0.1f;
@@ -642,6 +695,7 @@ int main(int argc, char* argv[])
                       * Matrix_Scale(0.001f,0.001f,0.001f);
                 glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
                 glUniform1i(g_object_id_uniform, TREE);
+				glUniform1i(gouraud_shading_uniform, true);
                 DrawVirtualObject("SM_Pine_b_04");
             }
             else if(trees_status[i]==1){
@@ -664,6 +718,7 @@ int main(int argc, char* argv[])
                         * Matrix_Scale(0.001f,0.001f,0.001f);
                     glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
                     glUniform1i(g_object_id_uniform, BURNING);
+					glUniform1i(gouraud_shading_uniform, true);
                     DrawVirtualObject("SM_Pine_b_04");
 
                     // Desenho da fumaça
@@ -682,7 +737,7 @@ int main(int argc, char* argv[])
             }
 
         }
-
+		
         // Interface do usuário
         UI(window);
 
@@ -696,6 +751,7 @@ int main(int argc, char* argv[])
         // Imprimimos na tela informação sobre o número de quadros renderizados
         // por segundo (frames per second).
         TextRendering_ShowFramesPerSecond(window);
+		
 
         // Atualiza delta de tempo
         float current_time = (float)glfwGetTime();
@@ -716,11 +772,12 @@ int main(int argc, char* argv[])
         // pela biblioteca GLFW.
         glfwPollEvents();
 
-
+		if (!cutscenePlaying) {
         // Movimenta câmera para frente sempre
           torso_position += camera_view_vector/norm(camera_view_vector) * speed * delta_t;
         if (tecla_W_pressionada)
             torso_position += camera_view_vector/norm(camera_view_vector) * 1.5f * speed * delta_t;
+		}
         // else if (tecla_S_pressionada)
         //     // Movimenta câmera para trás
         //     torso_position -= camera_view_vector/norm(camera_view_vector) * speed * delta_t;
