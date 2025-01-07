@@ -15,6 +15,7 @@ Arthur Olinto Dossena:
 - Câmera livre
 - Movimentação dos objetos
 - Lógica de gameplay
+
 Diogo Brum Rivoire:
 - Colisões
 - Menu de Game Over e Mecânicas de Restart
