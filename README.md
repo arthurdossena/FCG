@@ -7,13 +7,20 @@ Repositório para o trabalho final da cadeira INF01047 - Fundamentos de Computa�
 
 # Contribuições
 Arthur Olinto Dossena:
-- Rendering
-- 
+- Carregamento dos objetos e texturas
+- Instanciação dos objetos
+- Interpolação de Phong
+- Modelo de iluminação difusa (árvores, chão e avião) e Blinn-Phong (lago)
+- Animação de textura (lago)
+- Câmera livre
+- Movimentação dos objetos
+- Lógica de gameplay
 Diogo Brum Rivoire:
 - Colisões
 - Menu de Game Over e Mecânicas de Restart
 - Curva de Beziér Cúbica
-- Interpolação Gouraud
+- Câmera look-at (cutscene inicial)
+- Interpolação de Gouraud
 - Testes
 
 # Relatório
@@ -23,19 +30,20 @@ Diogo Brum Rivoire:
 ![image](https://github.com/user-attachments/assets/5465af22-78d2-49f0-99c6-32d13f3e7ef2)
 
 # Manual de Instruções
-**Movimento do Mouse** - Controle de Câmera e Direcionamento da Movimentação Frontal do Avião
+**Movimento do Mouse** - Controle de câmera e direcionamento da movimentação frontal do avião
 
-**W** - Aumenta a Velocidade Frontal do Avião após a cutscene inicial
+**W** - Aumenta a velocidade frontal do avião após a cutscene inicial
 
-**A** - Movimenta e Rotaciona o Avião para a Esquerda após a cutscene inicial
+**A** - Movimenta e rotaciona o avião para a esquerda após a cutscene inicial
 
-**D** - Movimenta e Rotaciona o Avião para a Direita após a cutscene inicial
+**D** - Movimenta e rotaciona o avião para a direita após a cutscene inicial
 
-**SPACE** - Libera Água Armazenada pelo Avião
+**SPACE** - Libera água armazenada pelo avião
 
-**R** - Reinicia o Jogo quando acontecer Game Over
+**R** - Reinicia o jogo quando acontecer Game Over
 
-**Q** - Fecha o Jogo quando acontecer Game Over
+**Q** - Fecha o jogo quando acontecer Game Over
+
 # Compilação e Execução
 **Linux com Makefile:**
 Para compilar e executar este projeto no Linux, primeiro você precisa instalar
