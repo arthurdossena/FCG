@@ -19,7 +19,7 @@ Arthur Olinto Dossena:
 Diogo Brum Rivoire:
 - Colisões
 - Menu de Game Over e Mecânicas de Restart
-- Curva de Beziér Cúbica
+- Curva de Bézier Cúbica
 - Câmera look-at (cutscene inicial)
 - Interpolação de Gouraud
 - Testes
@@ -30,12 +30,11 @@ O jogo se chama Fireplane, e tem como gameplay controlar um avião que é conduz
 O trabalho utilizou como base o código implementado para o Laboratório 5. Assim, os objetos foram incluídos por meio da biblioteca Tiny Object. Com a função LoadTextureImage, todas as imagens, que foram retiradas da internet, puderam ser carregadas no projeto.
 Inicialmente, o avião foi adicionado, mas, devido ao seu tamanho original ser demasiadamente grande, muito tempo foi gasto para perceber que o fato de não aparecer na tela se dava por conta da câmera estar dentro dele. Após esse empecilho inicial, o restante do trabalho ocorreu a passos normais.
 
-Utilizando GL_REPEAT nas texturas, foi possível fazer com que o plano se assemelhasse a grama. Depois, as árvores foram adicionadas de forma a serem instâncias múltiplas de um mesmo objeto.
-No arquivo shader_fragment, aplicamos a interpolação de Phong na maioria dos objetos. Em geral, eles eram iluminados por meio do modelo de Lambert, exceto o lago, que utilizava Blinn-Phong, e as gotas d'água, que eram discos que sempre estavam virados para a câmera e refletiam uma cor azul constante (a fim de parecer ser uma esfera, apesar de ser um polígono). Não houve grandes dificuldades na implementação do loop de gameplay, visto que de maneira simples foi possível contar a quantidade de árvores apagadas durante o jogo.
+Utilizando GL_REPEAT nas texturas, foi possível fazer com que o plano se assemelhasse a grama. Depois, as árvores foram adicionadas de forma a serem instâncias múltiplas de um mesmo objeto. Ainda, como algo extra, a textura do lago foi animada para parecer que a água se movimenta conforme o tempo passa, imitando um movimento cíclico de expansão e contração (usando uma função seno). No arquivo shader_fragment, aplicamos a interpolação de Phong na maioria dos objetos. Em geral, eles eram iluminados por meio do modelo de Lambert, exceto o lago, que utilizava Blinn-Phong, e as gotas d'água, que eram discos circulares que sempre estavam virados para a câmera e refletiam uma cor azul constante (a fim de parecer ser uma esfera vista de qualquer ângulo, apesar de ser um círculo plano). Não houve grandes dificuldades na implementação do loop de gameplay, visto que de maneira simples foi possível contar a quantidade de árvores apagadas durante o jogo.
 
 Após isso, implementamos mecânicas de colisões, o que foi relativemente simples. A implementação foi feita verificando se o avião colidia com diferentes objetos, como árvores, o plano e a área de abastecimento de água. O código utiliza funções como checkCollisionSpherePlane para detectar colisões entre o avião e o plano, e checkCollisionSphereSphere para verificar se o avião toca nas árvores ou se gotas d'água encostam nas árvores. Caso ocorra colisão com o plano ou árvores, o jogo é finalizado (Game Over). Quando isso ocorre uma tela de interação é disponibilizada, o código captura as interações do usuário durante o Game Over, permitindo reiniciar o jogo ou encerrar a sessão.
 
-No final do projeto, incluímos uma cutscene inicial. A câmera segue o padrão "Look-At" durante a cutscene, de modo que ela esteja centrada em posição que ela pode acompanhar a chegada do avião. Para a animação do voo do avião durante essa cutscene, foi utilizada uma curva de Beziér cúbica. A posição do avião ao longo da curva é calculada com base em um parâmetro t que varia de 0 a 1, controlando o movimento do avião durante uma cutscene de introdução. A fórmula de Beziér cúbica foi aplicada para definir as posições ao longo do tempo e gerar um voo suave para o avião.
+No final do projeto, incluímos uma cutscene inicial. A câmera segue o padrão "Look-At" durante a cutscene, de modo que ela esteja centrada em posição que ela pode acompanhar a chegada do avião. Para a animação do voo do avião durante essa cutscene, foi utilizada uma curva de Bézier cúbica. A posição do avião ao longo da curva é calculada com base em um parâmetro t que varia de 0 a 1, controlando o movimento do avião durante uma cutscene de introdução. A fórmula de Bézier cúbica foi aplicada para definir as posições ao longo do tempo e gerar um voo suave para o avião.
 
 
  
